@@ -62,6 +62,14 @@ namespace overlay
             DISABLE = false;
         }
 
+        public void SendDown(Keys key)
+        {
+            var vk = (byte)key;
+            DISABLE = true;
+            keybd_event(vk, 0, KEYEVENTF_EXTENDEDKEY, 0);
+            DISABLE = false;
+        }
+
         public bool IsPressed(Keys key)
         {
             var s = GetKeyState(key);

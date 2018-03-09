@@ -9,13 +9,16 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static overlay.HudControl;
 
 namespace overlay
 {
     public partial class Form1 : Form
     {
         Keyboard kb;
-        Stopwatch stopwatch = Stopwatch.StartNew();
+        HudControl control;
+        Stopwatch stopwatchPots = Stopwatch.StartNew();
+        Stopwatch stopwatchAdrenaline = Stopwatch.StartNew();
         Timer t = new Timer();
 
         bool enabled = false;
@@ -23,10 +26,14 @@ namespace overlay
         public Form1()
         {
             InitializeComponent();
+            CenterToScreen();
 
             kb = new Keyboard(this);
+            control = new HudControl(mainPictureBox);
+
+
             t.Tick += TimerTick;
-            t.Interval = 100;
+            t.Interval = 400;
             t.Start();
 
             kb.KeyDown += (sender, arg) => {
@@ -44,7 +51,17 @@ namespace overlay
                     kb.Send(Keys.D4);
                     kb.Send(Keys.D5);
 
-                    stopwatch.Restart();
+                    stopwatchPots.Restart();
+                }
+
+                if(arg.Key == Keys.W)
+                {
+                    stopwatchAdrenaline.Restart();
+                }
+                
+                if(arg.Key == Keys.Space)
+                {
+                    kb.SendDown(Keys.LShiftKey);
                 }
 
                 if(arg.Key == Keys.B)
@@ -64,16 +81,47 @@ namespace overlay
 
         private void TimerTick(object sender, EventArgs e)
         {
-            var secs = Math.Min((int)stopwatch.Elapsed.TotalSeconds, 60);
+            using (var drawer = control.StartDrawing())
+            {
+                if(!enabled)
+                {
+                    drawer.Draw("disabled", Brushes.Black, new PointF(0, 0));
+                    return;
+                }
 
-            if(enabled)
-            {
-                label1.ForeColor = Color.Red;
-            } else
-            {
-                label1.ForeColor = Color.Black;
+                DrawPots(drawer);
+                DrawAdrenaline(drawer);
             }
-            label1.Text = secs.ToString();
+        }
+
+        void DrawPots(Drawer drawer)
+        {
+            var elapsed = Math.Min(stopwatchPots.Elapsed.TotalSeconds, 60);
+
+            var color = Brushes.Black;
+            if(elapsed > 5.5)
+            {
+                color = Brushes.Red;
+            }
+
+            var text = String.Format("{0:0.0}", elapsed);
+
+            drawer.Draw(text, color, new PointF(-0.5f, 0));
+        }
+
+        void DrawAdrenaline(Drawer drawer)
+        {
+            var elapsed = Math.Min(stopwatchAdrenaline.Elapsed.TotalSeconds, 60);
+
+            var color = Brushes.Black;
+            if (elapsed > 20)
+            {
+                color = Brushes.Red;
+            }
+
+            var text = String.Format("{0:0.0}", elapsed);
+
+            drawer.Draw(text, color, new PointF(0.5f, 0));
         }
 
         private void Form1_Load(object sender, EventArgs e)
